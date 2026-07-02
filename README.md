@@ -1,2 +1,2 @@
 Sample Maven Build
-Changed code to check build
+Changed code to check Build
