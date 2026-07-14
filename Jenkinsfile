@@ -6,32 +6,31 @@ pipeline {
         maven 'Maven'
     }
 
+    environment {
+        SONARQUBE_ENV = 'Sonar'
+    }
+
     stages {
 
         stage('Checkout') {
             steps {
                 git branch: 'main',
+                    credentialsId: '44f2d6db-f7e5-489b-a1b5-f5c9ece55da4',
                     url: 'https://github.com/DhanushGroot/Sample.git'
             }
         }
 
-        stage('Compile') {
+        stage('Build & Test') {
             steps {
-                sh 'mvn clean compile'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'mvn test'
+                sh 'mvn clean verify'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('Sonar') {
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
                     sh '''
-                        mvn clean verify sonar:sonar \
+                        mvn sonar:sonar \
                         -Dsonar.projectKey=demo \
                         -Dsonar.projectName=demo
                     '''
@@ -41,21 +40,26 @@ pipeline {
 
         stage('Package') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn package -DskipTests'
             }
         }
 
         stage('Deploy to Nexus') {
             steps {
-                sh 'mvn deploy'
+                sh 'mvn deploy -DskipTests'
+            }
+        }
+
+        stage('Archive Artifact') {
+            steps {
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
     }
 
     post {
         success {
-            archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-            echo 'Pipeline completed successfully.'
+            echo 'CI Pipeline completed successfully.'
         }
 
         failure {
