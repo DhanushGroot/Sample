@@ -6,10 +6,6 @@ pipeline {
         maven 'Maven'
     }
 
-    environment {
-        SCANNER_HOME = tool 'SonarQube'
-    }
-
     stages {
 
         stage('Checkout') {
@@ -33,14 +29,12 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                    ${SCANNER_HOME}/bin/sonar-scanner \
-                    -Dsonar.projectKey=demo \
-                    -Dsonar.projectName=demo \
-                    -Dsonar.sources=src \
-                    -Dsonar.java.binaries=target/classes
-                    """
+                withSonarQubeEnv('Sonar') {
+                    sh '''
+                        mvn clean verify sonar:sonar \
+                        -Dsonar.projectKey=demo \
+                        -Dsonar.projectName=demo
+                    '''
                 }
             }
         }
@@ -59,16 +53,17 @@ pipeline {
     }
 
     post {
-        always {
-            archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-        }
-
         success {
-            echo 'CI Pipeline completed successfully.'
+            archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            echo 'Pipeline completed successfully.'
         }
 
         failure {
             echo 'Pipeline failed.'
+        }
+
+        always {
+            cleanWs()
         }
     }
 }
